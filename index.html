@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Zero Coal Cost Explorer</title>
 <meta name="description" content="Interactive explorer of the costs and savings of a 1.5°C coal phase-out, from Macaire, Grieco, Naef & Volz (2026), Climate Policy.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="High Voltage: financing the path to zero coal">
+<meta property="og:title" content="What does it cost to exit coal power?">
+<meta property="og:description" content="$4.1 tn net cost at IEA STEPS carbon prices, $2.9 tn net gain at Net Zero prices. Explore the assumptions behind Macaire, Grieco, Naef &amp; Volz (2026), Climate Policy.">
+<meta property="og:url" content="https://zero-coal.github.io/">
+<meta property="og:image" content="https://zero-coal.github.io/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="627">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://zero-coal.github.io/og-image.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
@@ -77,6 +87,13 @@ input[type=range]{width:100%;accent-color:var(--volt);margin:0}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);font-weight:600}
 select{font:inherit;font-size:13.5px;width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--ink)}
 .wacc-vals{margin:0;font-size:11.5px;line-height:1.5;color:var(--ink-3)}
+.co2{border-collapse:collapse;width:100%;font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.co2 th,.co2 td{padding:3px 0;text-align:right;font-weight:400;border-bottom:1px solid var(--grid)}
+.co2 th:first-child,.co2 td:first-child{text-align:left;padding-right:8px}
+.co2 th{font-size:11px;letter-spacing:.04em}
+.co2 .c0,.co2 .c1{width:62px;font-family:var(--f-mono)}
+.co2.s0 .c0,.co2.s1 .c1{color:var(--ink);font-weight:600}
+.co2-note{margin:0;font-size:11px;color:var(--ink-3)}
 .divider{border:0;border-top:1px solid var(--line);margin:0}
 
 /* chart panel */
@@ -175,25 +192,36 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3)}
       <h2>Assumptions</h2>
 
       <div class="ctl">
-        <div class="ctl-head"><label for="carbon">Carbon price path <span class="tag pub">Paper</span></label></div>
-        <input type="range" id="carbon" min="0" max="100" step="5" value="0" aria-describedby="carbonVal">
-        <div class="range-ends"><span>IEA STEPS</span><span>IEA Net Zero</span></div>
-        <div class="val" id="carbonVal" style="text-align:left"></div>
-        <p class="hint">Ends are the paper's two scenarios. In-between positions interpolate linearly, since CO₂ costs scale with the price.</p>
+        <div class="ctl-head"><span class="lbl" id="carbonLbl">Carbon price path</span></div>
+        <div class="seg" role="group" aria-labelledby="carbonLbl" id="carbon">
+          <button type="button" data-v="0" aria-pressed="true">IEA STEPS</button>
+          <button type="button" data-v="100" aria-pressed="false">IEA Net Zero</button>
+        </div>
+        <table class="co2" id="co2tbl">
+          <thead><tr><th>2030 CO₂ price, $/t</th><th class="c0">STEPS</th><th class="c1">Net Zero</th></tr></thead>
+          <tbody>
+            <tr><td>China</td><td class="c0">28</td><td class="c1">90</td></tr>
+            <tr><td>European Union</td><td class="c0">120</td><td class="c1">140</td></tr>
+            <tr><td>Other advanced economies*</td><td class="c0">0–130</td><td class="c1">140</td></tr>
+            <tr><td>Other emerging economies</td><td class="c0">0–13</td><td class="c1">15–90</td></tr>
+          </tbody>
+        </table>
+        <p class="co2-note">* OECD except Mexico. Source: IEA, World Energy Outlook 2023.</p>
+        <p class="hint">Coal is the most carbon-intensive way to make electricity, so the higher the carbon price, the more expensive it is to keep coal plants running and the more money is saved by closing them.</p>
       </div>
 
       <hr class="divider">
 
       <div class="ctl">
-        <label for="mix">Replacement technology <span class="tag pub">Paper</span></label>
+        <label for="mix">Replacement technology</label>
         <select id="mix">
-          <option value="equal">Balanced mix (solar, wind, nuclear)</option>
+          <option value="equal">Balanced mix (paper baseline)</option>
           <option value="solar">100% solar</option>
           <option value="nuclear">100% nuclear</option>
           <option value="onshore">100% onshore wind</option>
           <option value="offshore">100% offshore wind</option>
         </select>
-        <p class="hint">The paper reports build costs by mix. Financing costs are rescaled with the investment here.</p>
+        <p class="hint">Each low-carbon technology has its own construction cost and its own capacity factor. Nuclear, for instance, has high construction costs but a very high capacity factor, so its cost per unit of electricity generated is comparable to that of solar or wind.</p>
       </div>
 
       <hr class="divider">
@@ -205,30 +233,30 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3)}
           <button type="button" data-v="600" aria-pressed="false">0.5 MWh/MW</button>
           <button type="button" data-v="1200" aria-pressed="false">1 MWh/MW</button>
         </div>
-        <p class="hint">Indicative 4-hour storage at IRENA's $192/kWh: +$0.6–1.2 tn globally. No regional split is estimated.</p>
+        <p class="hint">Wind and solar do not produce power all the time, so storage helps keep the grid balanced as they replace coal. This option adds an indicative estimate of the cost of installing battery storage.</p>
       </div>
 
       <hr class="divider">
 
       <div class="ctl">
-        <div class="ctl-head"><span class="lbl" id="lifeLbl">Coal plant lifetime <span class="tag pub">Paper</span></span></div>
+        <div class="ctl-head"><span class="lbl" id="lifeLbl">Coal plant lifetime</span></div>
         <div class="seg" role="group" aria-labelledby="lifeLbl" id="life">
           <button type="button" data-v="40" aria-pressed="true">40 yrs</button>
           <button type="button" data-v="50" aria-pressed="false">50 yrs</button>
           <button type="button" data-v="60" aria-pressed="false">60 yrs</button>
         </div>
-        <p class="hint">The paper reports only net totals for this variant, so it appears as a hatched adjustment.</p>
+        <p class="hint">The longer a coal plant is expected to run, the more years of operation are given up when it closes early. That marginally increases costs (stranded asset value), but it also means more years of fuel and carbon costs are avoided.</p>
       </div>
 
       <hr class="divider">
 
       <div class="ctl">
-        <div class="ctl-head"><span class="lbl" id="waccLbl">Market cost of capital <span class="tag pub">Paper</span></span></div>
+        <div class="ctl-head"><span class="lbl" id="waccLbl">Cost of capital</span></div>
         <div class="seg" role="group" aria-labelledby="waccLbl" id="wacc">
           <button type="button" data-v="base" aria-pressed="true">IRENA 2025 WACC</button>
           <button type="button" data-v="plus2" aria-pressed="false">+2 pp</button>
         </div>
-        <p class="wacc-vals num" id="waccVals" hidden></p>
+        <p class="hint">The cost of capital is the price of money: the return that lenders and investors require for financing new low-carbon capacity, similar to the interest rate on a loan. It varies by region: <span id="waccVals"></span>.</p>
       </div>
 
       <hr class="divider">
@@ -236,7 +264,7 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3)}
       <div class="ctl">
         <div class="ctl-head"><label for="conc">Financing costs covered by concessional finance</label><span class="val" id="concVal">0%</span></div>
         <input type="range" id="conc" min="0" max="100" step="5" value="0">
-        <p class="hint">100% reproduces the paper's 0% cost-of-capital scenario. Intermediate values scale the financing bill proportionally.</p>
+        <p class="hint">Concessional finance means loans at below-market rates, provided by development banks, climate funds or donor governments, which reduce the interest paid on the investment needed to replace coal plants with low-carbon sources.</p>
       </div>
     </aside>
 
@@ -502,18 +530,16 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3)}
   }
 
   function carbonText(){
-    const t=S.carbon/100;
-    const cn=Math.round(28+t*(90-28)), eu=Math.round(120+t*(140-120));
-    document.getElementById("carbonVal").textContent=`2030 CO₂ price · China $${cn}/t · EU $${eu}/t`;
+    const t=document.getElementById("co2tbl");
+    t.classList.toggle("s0",S.carbon===0); t.classList.toggle("s1",S.carbon===100);
   }
 
   // ---------- controls ----------
   function syncControls(){
-    document.getElementById("carbon").value=S.carbon;
     document.getElementById("conc").value=S.conc;
     document.getElementById("concVal").textContent=S.conc+"%";
     document.getElementById("mix").value=S.mix;
-    [["wacc","wacc"],["store","store"],["life","life"]].forEach(([id,k])=>{
+    [["carbon","carbon"],["wacc","wacc"],["store","store"],["life","life"]].forEach(([id,k])=>{
       document.querySelectorAll(`#${id} button`).forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.v)===String(S[k])));
     });
     const match=Object.entries(PRESETS).find(([k,p])=>Object.keys(DEFAULT).every(key=>key==="scope"||String(p[key])===String(S[key])));
@@ -522,17 +548,14 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3)}
   function waccText(){
     const el=document.getElementById("waccVals");
     const ent=Object.entries(WACC_BASE);
-    if(ent.some(([,v])=>v==null)){ el.hidden=true; return; }
     const add=S.wacc==="plus2"?2:0;
-    el.textContent=ent.map(([r,v])=>`${r} ${(v+add).toFixed(1)}%`).join(" · ");
-    el.hidden=false;
+    el.textContent=ent.map(([r,v])=>`${r} ${(v+add).toFixed(1)}%`).join(", ");
   }
   function update(){ syncControls(); waccText(); carbonText(); draw(); legend(); kpis(); table(); hideTip(); }
 
-  document.getElementById("carbon").addEventListener("input",e=>{S.carbon=+e.target.value;update();});
   document.getElementById("conc").addEventListener("input",e=>{S.conc=+e.target.value;update();});
   document.getElementById("mix").addEventListener("change",e=>{S.mix=e.target.value;update();});
-  [["wacc",v=>v],["store",v=>+v],["life",v=>+v]].forEach(([id,cast])=>{
+  [["carbon",v=>+v],["wacc",v=>v],["store",v=>+v],["life",v=>+v]].forEach(([id,cast])=>{
     document.querySelectorAll(`#${id} button`).forEach(b=>b.addEventListener("click",()=>{S[id]=cast(b.dataset.v);update();}));
   });
   document.querySelectorAll("#presets .chip").forEach(c=>c.addEventListener("click",()=>{S={...PRESETS[c.dataset.p], scope:S.scope};update();}));
