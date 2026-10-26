@@ -91,8 +91,9 @@ select{font:inherit;font-size:13.5px;width:100%;padding:7px 8px;border:1px solid
 .co2 th,.co2 td{padding:3px 0;text-align:right;font-weight:400;border-bottom:1px solid var(--grid)}
 .co2 th:first-child,.co2 td:first-child{text-align:left;padding-right:8px}
 .co2 th{font-size:11px;letter-spacing:.04em}
-.co2 .c0,.co2 .c1{width:62px;font-family:var(--f-mono)}
-.co2.s0 .c0,.co2.s1 .c1{color:var(--ink);font-weight:600}
+.co2 .c0,.co2 .c1,.co2 .cs{width:46px;padding-left:6px;font-family:var(--f-mono);white-space:nowrap}
+.co2 th.c0,.co2 th.c1,.co2 th.cs{font-family:var(--f-body)}
+.co2 .cs{color:var(--ink);font-weight:600}
 .co2-note{margin:0;font-size:11px;color:var(--ink-3)}
 .divider{border:0;border-top:1px solid var(--line);margin:0}
 
@@ -193,20 +194,18 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3)}
 
       <div class="ctl">
         <div class="ctl-head"><span class="lbl" id="carbonLbl">Carbon price path</span></div>
-        <div class="seg" role="group" aria-labelledby="carbonLbl" id="carbon">
-          <button type="button" data-v="0" aria-pressed="true">IEA STEPS</button>
-          <button type="button" data-v="100" aria-pressed="false">IEA Net Zero</button>
-        </div>
+        <input type="range" id="carbon" min="0" max="100" step="5" value="0" aria-labelledby="carbonLbl">
+        <div class="range-ends"><span>IEA STEPS</span><span>IEA Net Zero</span></div>
         <table class="co2" id="co2tbl">
-          <thead><tr><th>2030 CO₂ price, $/t</th><th class="c0">STEPS</th><th class="c1">Net Zero</th></tr></thead>
+          <thead><tr><th>2030 CO₂ price, $/t</th><th class="c0">STEPS</th><th class="cs">Current</th><th class="c1">NZE</th></tr></thead>
           <tbody>
-            <tr><td>China</td><td class="c0">28</td><td class="c1">90</td></tr>
-            <tr><td>European Union</td><td class="c0">120</td><td class="c1">140</td></tr>
-            <tr><td>Other advanced economies*</td><td class="c0">0–130</td><td class="c1">140</td></tr>
-            <tr><td>Other emerging economies</td><td class="c0">0–13</td><td class="c1">15–90</td></tr>
+            <tr><td>China</td><td class="c0">28</td><td class="cs" data-lo="28,90"></td><td class="c1">90</td></tr>
+            <tr><td>European Union</td><td class="c0">120</td><td class="cs" data-lo="120,140"></td><td class="c1">140</td></tr>
+            <tr><td>Other advanced economies*</td><td class="c0">0–130</td><td class="cs" data-lo="0,140" data-hi="130,140"></td><td class="c1">140</td></tr>
+            <tr><td>Other emerging economies</td><td class="c0">0–13</td><td class="cs" data-lo="0,15" data-hi="13,90"></td><td class="c1">15–90</td></tr>
           </tbody>
         </table>
-        <p class="co2-note">* OECD except Mexico. Source: IEA, World Energy Outlook 2023.</p>
+        <p class="co2-note">* OECD except Mexico. Source: IEA, World Energy Outlook 2023. Positions between the two scenarios are interpolated linearly.</p>
         <p class="hint">Coal is the most carbon-intensive way to make electricity, so the higher the carbon price, the more expensive it is to keep coal plants running and the more money is saved by closing them.</p>
       </div>
 
@@ -256,7 +255,7 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3)}
           <button type="button" data-v="base" aria-pressed="true">IRENA 2025 WACC</button>
           <button type="button" data-v="plus2" aria-pressed="false">+2 pp</button>
         </div>
-        <p class="hint">The cost of capital is the price of money: the return that lenders and investors require for financing new low-carbon capacity, similar to the interest rate on a loan. It varies by region: <span id="waccVals"></span>.</p>
+        <p class="hint">The cost of capital is the price of money: the return that lenders and investors require for financing new low-carbon capacity, similar to the interest rate on a loan.</p>
       </div>
 
       <hr class="divider">
@@ -530,32 +529,37 @@ footer{margin-top:28px;font-size:12px;color:var(--ink-3)}
   }
 
   function carbonText(){
-    const t=document.getElementById("co2tbl");
-    t.classList.toggle("s0",S.carbon===0); t.classList.toggle("s1",S.carbon===100);
+    const t=S.carbon/100, L=str=>{const [x,y]=str.split(",").map(Number);return Math.round(x+t*(y-x));};
+    document.querySelectorAll("#co2tbl td.cs").forEach(td=>{
+      const lo=L(td.dataset.lo), hi=td.dataset.hi?L(td.dataset.hi):lo;
+      td.textContent = lo===hi ? String(lo) : `${lo}–${hi}`;
+    });
   }
 
   // ---------- controls ----------
   function syncControls(){
+    document.getElementById("carbon").value=S.carbon;
     document.getElementById("conc").value=S.conc;
     document.getElementById("concVal").textContent=S.conc+"%";
     document.getElementById("mix").value=S.mix;
-    [["carbon","carbon"],["wacc","wacc"],["store","store"],["life","life"]].forEach(([id,k])=>{
+    [["wacc","wacc"],["store","store"],["life","life"]].forEach(([id,k])=>{
       document.querySelectorAll(`#${id} button`).forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.v)===String(S[k])));
     });
     const match=Object.entries(PRESETS).find(([k,p])=>Object.keys(DEFAULT).every(key=>key==="scope"||String(p[key])===String(S[key])));
     document.querySelectorAll("#presets .chip").forEach(c=>c.setAttribute("aria-pressed", match && c.dataset.p===match[0] ? "true":"false"));
   }
   function waccText(){
-    const el=document.getElementById("waccVals");
+    const el=document.getElementById("waccVals"); if(!el) return;
     const ent=Object.entries(WACC_BASE);
     const add=S.wacc==="plus2"?2:0;
     el.textContent=ent.map(([r,v])=>`${r} ${(v+add).toFixed(1)}%`).join(", ");
   }
   function update(){ syncControls(); waccText(); carbonText(); draw(); legend(); kpis(); table(); hideTip(); }
 
+  document.getElementById("carbon").addEventListener("input",e=>{S.carbon=+e.target.value;update();});
   document.getElementById("conc").addEventListener("input",e=>{S.conc=+e.target.value;update();});
   document.getElementById("mix").addEventListener("change",e=>{S.mix=e.target.value;update();});
-  [["carbon",v=>+v],["wacc",v=>v],["store",v=>+v],["life",v=>+v]].forEach(([id,cast])=>{
+  [["wacc",v=>v],["store",v=>+v],["life",v=>+v]].forEach(([id,cast])=>{
     document.querySelectorAll(`#${id} button`).forEach(b=>b.addEventListener("click",()=>{S[id]=cast(b.dataset.v);update();}));
   });
   document.querySelectorAll("#presets .chip").forEach(c=>c.addEventListener("click",()=>{S={...PRESETS[c.dataset.p], scope:S.scope};update();}));
